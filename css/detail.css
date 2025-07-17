@@ -1,0 +1,6 @@
+      .detail {
+        position: fixed;
+        inset: 0;
+        background: var(--cream-white);
+        overflow-y: auto;
+      }

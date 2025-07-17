@@ -1,0 +1,14 @@
+      .scroll-container {
+        scrollbar-width: thin;
+        scrollbar-color: var(--warm-wood) #f0e8d9;
+      }
+      .scroll-item {
+        flex-shrink: 0;
+        width: 450px;
+        height: 200px; 
+      }
+      .scroll-img-left {
+        width: 200px;
+        height: 200px;
+        flex-shrink: 0;
+      }

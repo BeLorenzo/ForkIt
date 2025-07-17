@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ForkIt – Cart</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Bootstrap & icone -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <!-- Palette e bottoni custom -->
+    <link rel="stylesheet" href="/css/palette.css" />
+    <link rel="stylesheet" href="/css/button.css" />
+
+    <script src="/utils.js"></script>
+  </head>
+  <body>
+    <header><div id="navbar-placeholder"></div></header>
+    <main class="container-fluid py-4">
+      <h2 class="mb-4">Il tuo Carrello</h2>
+
+      <!--cart-container riempito da rendere se non vuoto -->
+      <div id="cart-container" class="row g-4"></div>
+      <p id="empty-cart-msg" class="text-muted d-none mt-2">
+        Il tuo carrello è vuoto
+      </p>
+    </main>
+
+    <footer><div id="footer-placeholder"></div></footer>
+
+    <script>
+      //Creazione dinamica iniziale
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadNavbar();
+        setupNavbar();
+        loadFooter();
+        renderCart();
+      });
+
+      //Conferma l'ordine del ristorante
+      async function confirmOrder(ristId) {
+        const cart = loadCart();
+        const user = await loadUserData();
+
+        //Messaggi diversi nel caso di carta totalmente mancante o incompleta
+        if (!user.paymentMethod) {
+          return showTemporaryAlert(
+            "Nessun metodo di pagamento: vai nel profilo ad inserirlo",
+            "danger"
+          );
+        }
+        const { cardNumber, cvv, expiry, owner } = user.paymentMethod;
+        if (!cardNumber || !cvv || !expiry || !owner) {
+          return showTemporaryAlert(
+            "Metodo di pagamento incompleto: vai nel profilo ad inserirlo",
+            "danger"
+          );
+        }
+
+        //Object.entries trasforma oggetto meal:num in array di coppie che poi vado a mappare trasformando la coppia
+        //in un oggetto a se stante associando una chiave ai valori che avevo
+        const foods = Object.entries(cart[ristId]).map(([mealId, qty]) => ({
+          mealId,
+          quantity: qty,
+        }));
+
+        const body = { place: ristId, foods };
+
+        //Creo nuovo ordine
+        const createRes = await fetch("/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (!createRes.ok) {
+          const err = await createRes.json();
+          return showTemporaryAlert("Errore: " + err.message, "danger");
+        }
+        const data = await createRes.json();
+        const orderId = data._id;
+
+        //Associo ordine a utente
+        const linkUserRes = await fetch(`/users/${user._id}/orders`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+        });
+        if (!linkUserRes.ok) {
+          const err = await res.json();
+          return showTemporaryAlert("Errore: " + err.message, "danger");
+        }
+        //Associo ordine a ristorante
+        const linkRistoRes = await fetch(`/restaurants/${ristId}/orders`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+        });
+        if (!linkRistoRes.ok) {
+          const err = await res.json();
+          return showTemporaryAlert("Errore: " + err.message, "danger");
+        }
+        showTemporaryAlert("Ordine confermato!", "success");
+        clearRestaurant(ristId);
+        renderCart();
+      }
+
+      //Mostra carrello
+      async function renderCart() {
+        const cart = loadCart();
+        const container = document.getElementById("cart-container");
+        container.innerHTML = "";
+
+        //Se carrello vuoto interrompo
+        const isEmpty = Object.keys(cart).length === 0;
+        document
+          .getElementById("empty-cart-msg")
+          .classList.toggle("d-none", !isEmpty);
+        if (isEmpty) return; 
+
+        //Per come ho gestito il fatto che in mezzo ad un ordine il cliente può cambiare ristorante devo ciclare su tutti i 
+        //ristoranti perchè potrebbe avere "un carrello" per ogni ristorante
+        for (const ristId of Object.keys(cart)) {
+          // prendi info ristorante
+          const rist = await loadRestaurantData(ristId);
+
+          //Ordine per ristorante. Creo container dove metterò i vari cibi
+          const card = document.createElement("div");
+          card.className = "col-12";
+          card.innerHTML = `
+      <div class="card p-3 shadow-sm">
+        <h4 class="text-teal mb-3">ForkIt ${rist.name}</h4>
+        <div class="list-group" id="rist-${ristId}-list"></div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <h5 class="m-0">Totale: <span id="total-${ristId}">€0,00</span></h5>
+          <button class="btn-teal-deep" onclick="confirmOrder('${ristId}')">
+            Conferma Ordine
+          </button>
+        </div>
+      </div>`;
+          container.appendChild(card);
+
+          // lista piatti da inserire nel container del ristorante con quell'id
+          const list = card.querySelector(`#rist-${ristId}-list`);
+          let total = 0;
+
+          for (const mealId of Object.keys(cart[ristId])) {
+            const num = cart[ristId][mealId];
+            const meal = await loadMealData(mealId);
+            total += (meal.price / 100) * num;
+            
+            //Creazione singolo cibo
+            const item = document.createElement("div");
+            item.className =
+              "list-group-item d-flex justify-content-between align-items-center";
+            item.innerHTML = `
+        <div class="d-flex gap-3">
+          <img src="${
+            meal.strMealThumb
+          }" width="90" height="90" class="rounded object-fit-cover">
+          <div>
+            <h6 class="m-0">${meal.strMeal}</h6>
+            <small class="text-muted">x${num}</small>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span>€${((meal.price / 100) * num).toFixed(2)}</span>
+          <button class="bg-transparent border-0 text-danger fs-5"
+            onclick="removeOne('${ristId}','${mealId}')">
+            <i class="bi bi-trash-fill"></i>
+          </button>
+        </div>`;
+            list.appendChild(item);
+          }
+          //Fisso il totale ordine ristorante come stringa con 2 decimali
+          card.querySelector(
+            `#total-${ristId}`
+          ).textContent = `€${total.toFixed(2)}`;
+        }
+      }
+
+      //Recupera carrello da localStorage
+      function loadCart() {
+        return JSON.parse(localStorage.getItem("cart") || "{}");
+      }
+
+      //Salva carrello in localStorage
+      function saveCart(cart) {
+        localStorage.setItem("cart", JSON.stringify(cart));
+      }
+
+      //Elimina un'unità di piatto dal carrello
+      function removeOne(ristId, mealId) {
+        const cart = loadCart();
+        if (!cart[ristId] || !cart[ristId][mealId]) return;
+        cart[ristId][mealId]--;
+        if (cart[ristId][mealId] <= 0) delete cart[ristId][mealId];
+        if (Object.keys(cart[ristId]).length === 0) delete cart[ristId];
+        saveCart(cart);
+        showTemporaryAlert("Rimossa 1 unità dal carrello", "success");
+        renderCart();
+      }
+
+      //Elimina tutto un ordine dal carrello - Quando confermo tolgo tutto
+      function clearRestaurant(ristId) {
+        const cart = loadCart();
+        delete cart[ristId];
+        saveCart(cart);
+      }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

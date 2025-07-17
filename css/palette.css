@@ -1,0 +1,29 @@
+      :root {
+        --teal-deep: #1e5d5b;
+        --warm-wood: #d9a066;
+        --cream-white: #fcfaf3;
+      }
+      main {
+        background-color: var(--cream-white);
+         min-height: 70rem; 
+      }
+      h1,
+      h2,
+      .text-teal {
+        color: var(--teal-deep);
+      }
+      .text-warm-wood {
+        color: var(--warm-wood);
+      }
+      .bg-teal-deep{
+        background-color:var(--teal-deep);
+      }
+      .bg-warm-wood{
+        background-color: var(--warm-wood);
+      }
+      .text-cream-white {
+        color: var(--cream-white);
+      }
+      .cursor-pointer{
+        cursor: pointer;
+      }

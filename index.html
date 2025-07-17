@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>ForkIt</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <script src="/utils.js"></script>
+    <link rel="stylesheet" href="/css/palette.css" /> 
+    <link rel="stylesheet" href="/css/button.css" /> 
+    <link rel="stylesheet" href="/css/scroll.css" /> 
+
+
+  </head>
+
+  <body>
+    <header>
+      <div id="navbar-placeholder"></div>
+    </header>
+    <main>
+  
+<div class="container-fluid py-3 px-5">
+<div class="row align-items-center text-center text-md-start">
+          <div class="col-md-4 col-lg-3">
+            <div id="logo" class="p-2 bg-warm-wood rounded-circle">
+              <img src="img/logo.png" alt="logo" class="w-100 h-100 rounded-circle" />
+            </div>
+          </div>
+
+          <div class="col-md-8">
+            <h1 class="display-4 fw-bold text-teal">ForkIt</h1>
+            <h5 class="fst-italic text-warm-wood">
+              Choose it. Eat it. Fork it.
+            </h5>
+            <p class="lead text-secondary">
+              Piatti irresistibili, ricette trasparenti: ForkIt è il primo fast
+              food open-source dove puoi ordinare, gustare e rifare ogni piatto.
+            </p>
+          </div>
+        </div>
+    
+        <h2 class="mb-3 mt-3 fw-bold text-teal">
+          La nostra storia e i nostri piatti
+        </h2>
+        <div class="row my-4">
+          <div class="scroll-container d-flex overflow-auto gap-3 pb-3">
+            <div class="scroll-item d-flex bg-light rounded-3">
+              <div class="scroll-img-left">
+                 <img src="img/idea-ok.png" class="w-100 h-100"/>
+              </div>
+              <div class="p-3 d-flex flex-column justify-content-center">
+                <h5 class="mb-1 text-teal">Nascita dell'idea</h5>
+                <p class="small text-secondary">
+                   ForkIt nasce dalla passione per il cibo trasparente e la voglia
+                    di rivoluzionare il fast food con ricette open-source.
+                </p>
+              </div>
+            </div>
+                        <div class="scroll-item d-flex bg-light rounded-3">
+              <div class="scroll-img-left">
+                 <img src="img/cucina.jpeg" class="w-100 h-100"/>
+              </div>
+              <div class="p-3 d-flex flex-column justify-content-center">
+                <h5 class="mb-1 text-teal">Come funziona</h5>
+                <p class="small text-secondary">
+                   Puoi ordinare i piatti che ami, scoprire ogni ingrediente e
+                replicarli a casa con le nostre ricette dettagliate.
+                </p>
+              </div>
+            </div>
+                         <div class="scroll-item d-flex bg-light rounded-3">
+              <div class="scroll-img-left">
+                 <img src="img/connessioni.png" class="w-100 h-100" />
+              </div>
+              <div class="p-3 d-flex flex-column justify-content-center">
+                <h5 class="mb-1 text-teal">Crescita e sedi</h5>
+                <p class="small text-secondary">
+    Dopo anni di duro lavoro, ForkIt conta diverse sedi in città
+                selezionate, mantenendo sempre qualità e trasparenza.
+                </p>
+              </div>
+            </div>          
+                         <div class="scroll-item d-flex bg-light rounded-3">
+              <div class="scroll-img-left">
+                 <img src="img/panino-home.jpg" class="w-100 h-100"/>
+              </div>
+              <div class="p-3 d-flex flex-column justify-content-center">
+                <h5 class="mb-1 text-teal">Esempio: Burger Artigianale</h5>
+                <p class="small text-secondary">
+    Un classico burger con carne locale, pane fatto in casa e salse
+                artigianali per un gusto unico e genuino.
+                </p>
+              </div>
+            </div>
+               <div class="scroll-item d-flex bg-light rounded-3">
+              <div class="scroll-img-left">
+                 <img src="img/mediterranea.jpg" class="w-100 h-100"/>
+              </div>
+              <div class="p-3 d-flex flex-column justify-content-center">
+                <h5 class="mb-1 text-teal">Esempio: Insalata Mediterranea</h5>
+                <p class="small text-secondary">
+            Fresca, croccante e ricca di sapori mediterranei, perfetta per
+                chi cerca leggerezza senza rinunciare al gusto.
+                </p>
+              </div>
+            </div>
+        
+          </div>
+        </div>
+          <div class="row d-flex align-items-center mt-5">
+  <div class="col-md-6 col-lg-4">
+    <div id="img-ristorante" class="overflow-hidden rounded-3 w-100 h-100">
+      <img src="img/ristorante.png" height="300px" class="rounded-3 w-100 h-100" />
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-6">
+    <h3 class="fw-bold text-teal">
+      Trova il ristorante più vicino a te!
+    </h3>
+    <p class="lead text-secondary">
+      Scopri dove gustare i nostri piatti vicino a te. Basta un click e
+      ti portiamo lì!
+    </p>
+    <button class="btn-teal-deep" onclick="location.href='/restaurants.html'">
+      Trova un ristorante
+    </button>
+  </div>
+</div>
+    </main>
+
+    <footer>
+      <div id="footer-placeholder"></div>
+    </footer>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadNavbar();
+        setupNavbar();
+        loadFooter();
+      });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  </body>
+</html>

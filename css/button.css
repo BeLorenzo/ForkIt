@@ -1,0 +1,49 @@
+      .btn-teal-deep {
+        background-color: var(--teal-deep);
+        color: var(--cream-white);
+        border: none;
+        transition: background-color 0.3s;
+        cursor: pointer;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.375rem;
+      }
+      .btn-teal-deep:hover{
+        background-color: var(--warm-wood);
+      }
+      .btn-teal-deep.active {
+        background-color: var(--warm-wood);
+      }
+      .btn-warm-wood {
+        background-color: var(--warm-wood);
+        color: var(--cream-white);
+        border: none;
+        transition: background-color 0.3s;
+        cursor: pointer;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.375rem;
+      }
+      .btn-warm-wood:hover{
+        background-color: var(--teal-deep);
+      }
+      .btn-delete {
+        background-color: rgb(180, 31, 31);
+        color: var(--cream-white);
+        border: none;
+        transition: background-color 0.3s;
+        cursor: pointer;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.375rem;
+      }
+      .btn-delete:hover{
+        background-color: rgb(133, 18, 18);
+      }
+      .icon-btn i {
+        color: #aaa;
+        transition: color 0.2s;
+      }
+      .icon-btn.filled i {
+        color: var(--teal-deep);
+      }
+      .icon-btn:hover i {
+        color: var(--warm-wood);
+      }

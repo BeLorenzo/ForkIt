@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ForkIt – Orders</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Bootstrap & icone -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <!-- Palette e bottoni custom -->
+    <link rel="stylesheet" href="/css/palette.css" />
+    <link rel="stylesheet" href="/css/button.css" />
+
+    <script src="/utils.js"></script>
+  </head>
+  <body>
+    <header><div id="navbar-placeholder"></div></header>
+    <main class="container-fluid py-4">
+      <h2 class="mb-4">Statistiche ristorante</h2>
+
+      <!-- filtro data -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <label class="form-label">Dal</label>
+          <input type="date" id="stats-start" class="form-control" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Al</label>
+          <input type="date" id="stats-end" class="form-control" />
+        </div>
+        <div id="restaurant-select-div" class="col-md-4">
+          <label for="restaurant-select" class="form-label">Ristorante</label>
+          <select id="restaurant-select" class="form-select">
+            <option value="">-- Seleziona un ristorante --</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn-teal-deep w-100" id="stats-apply">
+            <i class="bi bi-funnel me-1"></i> Applica filtri
+          </button>
+        </div>
+      </div>
+
+      <div id="stats-cards" class="row g-4 mb-5"></div>
+
+      <h4 class="text-teal mt-4">Top 3 piatti più venduti</h4>
+      <ol id="stats-top3" class="list-group list-group-numbered mb-5"></ol>
+
+      <h4 id="menu-stats-title" class="text-teal">Dati menù (complessivi)</h4>
+      <ul id="stats-menu" class="list-group list-group-flush"></ul>
+    </main>
+
+    <footer><div id="footer-placeholder"></div></footer>
+
+    <script>
+      //Creazione dinamica iniziale 
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadNavbar();
+        setupNavbar();
+        loadFooter();
+        if (localStorage.getItem("role") === "admin") {
+          document
+            .getElementById("restaurant-select-div")
+            .classList.remove("d-none");
+          document.getElementById("menu-stats-title").classList.add("d-none");
+          //popolo select
+          const select = document.getElementById("restaurant-select");
+          const restaurants = await fetch("/restaurants").then((r) => r.json());
+          restaurants.forEach((r) => {
+            const option = document.createElement("option");
+            option.value = r._id;
+            option.textContent = `ForkIt ${r.name} - ${r.address.street}, ${r.address.city}`;
+            select.appendChild(option);
+          });
+          select.addEventListener("change", applyStats);
+        } else {
+          document
+            .getElementById("menu-stats-title")
+            .classList.remove("d-none");
+          document
+            .getElementById("restaurant-select-div")
+            .classList.add("d-none");
+          const menu = await loadMenu();
+          renderMenuStats(menu);
+        }
+        applyStats();
+        document
+          .getElementById("stats-apply")
+          .addEventListener("click", applyStats);
+      });
+
+      //Mostra statistiche riguardo menu
+      function renderMenuStats(menu) {
+        const totMeals = menu.length;
+        const specials = menu.filter(
+          (meal) => meal.strCategory === "special"
+        ).length;
+        const ul = document.getElementById("stats-menu");
+        ul.innerHTML = `
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Piatti totali in menù</span><span>${totMeals}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Specialità create</span><span>${specials}</span>
+          </li>
+        `;
+      }
+
+      //Mostra statistiche
+      async function renderStats(stats) {
+        const cards = document.getElementById("stats-cards");
+        cards.innerHTML = `
+          ${cardHTML("Ordini totali", stats.numOrders)}
+          ${cardHTML("Incasso totale (€)", stats.revenue.toFixed(2))}
+          ${cardHTML(
+            "Valore medio scontrino (€)",
+            stats.averageOrder.toFixed(2)
+          )}
+          ${cardHTML("Media piatti per ordine", stats.avgItems.toFixed(1))}
+        `;
+
+        // top 3 piatti venduti
+        const topList = document.getElementById("stats-top3");
+        topList.innerHTML = "";
+        if (stats.numOrders === 0) {
+          topList.innerHTML = "Non ci sono ordini presenti con questi filtri";
+          return;
+        }
+        for (const [mealId, qty] of stats.topIds) {
+          const meal = await fetch(`/meals/${mealId}`).then((r) => r.json());
+          const li = document.createElement("li");
+          li.className = "list-group-item d-flex justify-content-between";
+          li.innerHTML = `<span>${meal.strMeal}</span><span class="text-muted">${qty} ordinati</span>`;
+          topList.appendChild(li);
+        }
+      }
+
+      //Crea la card per statistica
+      function cardHTML(label, value) {
+        return `
+          <div class="col-lg-3 col-6">
+            <div class="border rounded p-3 h-100 text-center shadow-sm">
+              <h5 class="text-teal mb-0">${value}</h5>
+              <p class="text-muted small mb-0">${label}</p>
+            </div>
+          </div>`;
+      }
+
+      //Funzione per filtrare applicando filtri temporali o ristorante
+      async function applyStats() {
+        const user = await loadUserData(localStorage.getItem("user_id"))
+        const start = document.getElementById("stats-start").value;
+        const end = document.getElementById("stats-end").value;
+        const restaurantId = user.restaurant || document.getElementById("restaurant-select").value;
+        let allOrders;
+        if (localStorage.getItem("role") === "admin" && !restaurantId) {
+            allOrders = await loadAllOrders();
+        } else {
+          allOrders = await loadOrdersRest(restaurantId);
+        }
+        if (allOrders.length === 0) {
+          document.getElementById("stats-cards").innerHTML = "";
+          document.getElementById("stats-top3").innerHTML =
+            "Non ci sono ordini presenti con questi filtri";
+          return; 
+        }
+
+        const orders = allOrders.filter((order) => {
+          const d = order.date.slice(0, 10); // yyyy-mm-dd
+          return (!start || d >= start) && (!end || d <= end);
+        });
+
+        const stats = computeStats(orders);
+        renderStats(stats);
+      }
+
+      // Funzione per caricare tutti gli ordini (admin)
+      async function loadAllOrders() {
+        const res = await fetch("/orders");
+        if (!res.ok) {
+          const err = await res.json();
+          showTemporaryAlert("Errore: " + err.message, "danger");
+          return [];
+        }
+        return await res.json();
+      }
+
+      //Calcola le statistiche basandosi su ordini in ingresso
+      function computeStats(orders) {
+        const numOrders = orders.length;
+
+        const revenue =
+          orders.reduce((sum, order) => sum + order.totalPrice, 0) / 100;
+
+        const averageOrder = numOrders ? revenue / numOrders : 0;
+
+        const totalItems = orders.reduce(
+          (sum, order) =>
+            sum +
+            order.foods.reduce((sum2, food) => sum2 + (food.quantity || 1), 0),
+          0
+        );
+        const avgItems = numOrders ? totalItems / numOrders : 0;
+
+        // contatore piatti per top3
+        const dishCount = {};
+        orders.forEach((order) => {
+          order.foods.forEach((food) => {
+            dishCount[food.mealId] =
+              (dishCount[food.mealId] || 0) + (food.quantity || 1);
+          });
+        });
+
+        // top 3
+        const topIds = Object.entries(dishCount)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3); 
+
+        return { numOrders, revenue, averageOrder, avgItems, topIds };
+      }
+
+      //Carica menu ristorante per conteggio
+      async function loadMenu() {
+        const user = await loadUserData(localStorage.getItem("user_id"));
+        const url = `/restaurants/${user.restaurant}/menu`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          showTemporaryAlert("Errore caricamento menù", "danger");
+          return [];
+        }
+        return await res.json();
+      }
+
+      //Carica gli ordini del ristorante
+      async function loadOrdersRest(restaurantId) {
+        if (!restaurantId) return [];
+        const res = await fetch(`/restaurants/${restaurantId}/orders`);
+        if (!res.ok) {
+            const err = await res.json();
+            return showTemporaryAlert("Errore: " + err.message, "danger");
+        }
+        const ordersRest = await res.json();
+        return ordersRest;
+      }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

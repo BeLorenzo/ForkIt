@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>ForkIt - Restaurants</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <script src="/utils.js"></script>
+    <link rel="stylesheet" href="/css/palette.css" />
+    <link rel="stylesheet" href="/css/button.css" />
+    <link rel="stylesheet" href="/css/detail.css" />
+  </head>
+
+  <body>
+    <header>
+      <div id="navbar-placeholder"></div>
+    </header>
+    <main>
+      <div class="container-fluid ms-4 mt-4">
+        <h1 class="mb-0 d-flex align-items-center">
+          Restaurants<button
+            id="btn-add-rest"
+            class="btn-teal-deep fs-6 ms-3"
+            onclick="openRestaurantForm()"
+          >
+            <i class="bi bi-plus-lg"></i> Nuovo Ristorante
+          </button>
+        </h1>
+        <p class="text-warm-wood fs-5 mb-4">Scegli il tuo hub del gusto.</p>
+
+        <div class="row g-3 mb-4 me-3">
+          <div class="col-md-6">
+            <input
+              id="searchName"
+              type="text"
+              class="form-control"
+              placeholder="Cerca per nome..."
+            />
+          </div>
+          <div class="col-md-6">
+            <input
+              id="searchCity"
+              type="text"
+              class="form-control"
+              placeholder="Cerca per città..."
+            />
+          </div>
+        </div>
+
+        <div id="restaurant-list" class="me-4"></div>
+
+        <div id="restaurant-detail" class="detail d-none">
+          <div class="container py-4">
+            <div
+              id="restaurant-detail-content"
+              class="bg-white p-4 rounded"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!--Aggiunta nuovo ristorante-->
+    <div id="edit-restaurant" class="detail d-none">
+      <div class="container py-4">
+        <button
+          id="close-restaurant"
+          class="btn-teal-deep mb-3"
+          onclick="closeRestaurantForm()"
+        >
+          <i class="bi bi-x-lg"></i> Chiudi
+        </button>
+
+        <form id="restaurant-form" class="bg-white p-4 rounded">
+          <h4 class="text-teal mb-3">Crea Nuovo Ristorante</h4>
+
+          <div class="row">
+            <div class="mb-3 col-md-12">
+              <label class="form-label">Nome</label>
+              <input class="form-control" id="rest-name" required />
+            </div>
+
+            <div class="mb-3 col-md-4">
+              <label class="form-label">Via e civico</label>
+              <input class="form-control" id="rest-street" required />
+            </div>
+
+            <div class="mb-3 col-md-2">
+              <label class="form-label">Città</label>
+              <input class="form-control" id="rest-city" required />
+            </div>
+
+            <div class="mb-3 col-md-2">
+              <label class="form-label">Provincia</label>
+              <input class="form-control" id="rest-prov" required />
+            </div>
+
+            <div class="mb-3 col-md-2">
+              <label class="form-label">Regione</label>
+              <input class="form-control" id="rest-region" required />
+            </div>
+
+            <div class="mb-3 col-md-2">
+              <label class="form-label">CAP</label>
+              <input class="form-control" id="rest-postalCode" required />
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label">Lun–Ven apertura 1</label>
+              <input id="edit-open1" class="form-control" required />
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Lun–Ven chiusura 1</label>
+              <input id="edit-close1" class="form-control" required />
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Lun–Ven apertura 2</label>
+              <input id="edit-open2" class="form-control" />
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Lun–Ven chiusura 2</label>
+              <input id="edit-close2" class="form-control" />
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label">Sab–Dom apertura</label>
+              <input id="edit-openWE" class="form-control" required />
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Sab–Dom chiusura</label>
+              <input id="edit-closeWE" class="form-control" required />
+            </div>
+
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Telefono fisso</label>
+              <input class="form-control" id="rest-tel" />
+            </div>
+
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Email</label>
+              <input class="form-control" type="email" id="rest-email" />
+            </div>
+
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Codice segreto</label>
+              <input
+                class="form-control"
+                type="password"
+                id="rest-secretCode"
+                required
+              />
+            </div>
+
+            <div class="mb-3 col-md-6">
+              <label class="form-label">Partita IVA</label>
+              <input class="form-control" id="rest-piva" required />
+            </div>
+          </div>
+
+          <button type="submit" class="btn-teal-deep">
+            <i class="bi bi-check-lg me-1"></i> Salva Ristorante
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <footer>
+      <div id="footer-placeholder"></div>
+    </footer>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadNavbar();
+        setupNavbar();
+        loadFooter();
+        const restaurants = await loadRestaurantList();
+
+        // Prendi restaurantId da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get("restaurantId");
+
+        if (id) {
+          // Cerca il ristorante con quell'id
+          const rest = restaurants.find((r) => r._id.toString() == id);
+          if (rest) {
+            showRestaurantDetail(rest);
+          }
+        }
+        if (localStorage.getItem("role") !== "admin")
+          document.getElementById("btn-add-rest").classList.add("d-none");
+      });
+
+      //Gestione submit form ristorante
+      document
+        .getElementById("restaurant-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const open1 = document.getElementById("edit-open1").value.trim();
+          const close1 = document.getElementById("edit-close1").value.trim();
+          const open2 = document.getElementById("edit-open2").value.trim();
+          const close2 = document.getElementById("edit-close2").value.trim();
+          const openWE = document.getElementById("edit-openWE").value.trim();
+          const closeWE = document.getElementById("edit-closeWE").value.trim();
+
+          const openingHours = {
+            lunVen: [
+              { open: open1, close: close1 },
+              { open: open2, close: close2 },
+            ],
+            sabDom: { open: openWE, close: closeWE },
+          };
+
+          const newRestaurant = {
+            name: document.getElementById("rest-name").value.trim(),
+            address: {
+              street: document.getElementById("rest-street").value.trim(),
+              province: document.getElementById("rest-prov").value.trim(),
+              city: document.getElementById("rest-city").value.trim(),
+              region: document.getElementById("rest-region").value.trim(),
+              postalCode: document
+                .getElementById("rest-postalCode")
+                .value.trim(),
+            },
+            contacts: {
+              tel: document.getElementById("rest-tel").value.trim(),
+              email: document.getElementById("rest-email").value.trim(),
+            },
+            secretCode: document.getElementById("rest-secretCode").value.trim(),
+            piva: document.getElementById("rest-piva").value.trim(),
+            openingHours: openingHours,
+          };
+
+          try {
+            const res = await fetch("http://localhost:3001/restaurants", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(newRestaurant),
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              return showTemporaryAlert(
+                `Errore nella creazione: ${err.message}`,
+                "danger"
+              );
+            }
+
+            showTemporaryAlert("Ristorante creato con successo!", "success");
+            closeRestaurantForm();
+            await loadRestaurantList();
+          } catch (error) {
+            showTemporaryAlert("Errore: " + error.message, "danger");
+          }
+        });
+
+      //Apri edit ristorante
+      function openRestaurantForm() {
+        document.getElementById("edit-restaurant").classList.remove("d-none");
+      }
+
+      //Chiudi edit ristorante
+      function closeRestaurantForm() {
+        document.getElementById("edit-restaurant").classList.add("d-none");
+      }
+
+      //Carica lista tutti i ristoranti
+      async function loadRestaurantList() {
+        const res = await fetch("http://localhost:3001/restaurants");
+        const restaurants = await res.json();
+
+        const nameInput = document.getElementById("searchName");
+        const cityInput = document.getElementById("searchCity");
+
+        //Funzione per aggiornare stampa
+        const redraw = () =>
+          renderRestaurantList(
+            filterRestaurants(restaurants, nameInput.value, cityInput.value)
+          );
+
+        //Prima stampa senza filtri
+        redraw();
+
+        //Ascolto mentre scrivo e faccio direttamente ricerca e ristampa
+        ["input", "change"].forEach((ev) => {
+          nameInput.addEventListener(ev, redraw);
+          cityInput.addEventListener(ev, redraw);
+        });
+
+        return restaurants;
+      }
+
+      //Funzione per filtrare ristoranti
+      function filterRestaurants(data, name, city) {
+        name = name.toLowerCase();
+        city = city.toLowerCase();
+        return data.filter((item) => {
+          const itemName = item.name.toLowerCase();
+          const itemCity = item.address.city.toLowerCase();
+          //Valuta filtri e ritorna ristorante se vero
+          return (
+            itemName.includes(name.toLowerCase()) &&
+            itemCity.includes(city.toLowerCase())
+          );
+        });
+      }
+
+      //Raggruppamento per regioni
+      function groupByRegion(list) {
+        const groups = {}; 
+        for (const restaurant of list) {
+          const region = restaurant.address.region;
+          if (!groups[region]) {
+            groups[region] = [];
+          }
+          groups[region].push(restaurant);
+        }
+        return groups;
+      }
+
+      //Funzione che effettivamente mostra i ristoranti
+      function renderRestaurantList(list) {
+        const container = document.getElementById("restaurant-list");
+        container.innerHTML = "";
+
+        const grouped = groupByRegion(list);
+        //Scorre le regioni e per ogni ristorante in quella regione chiama createCard
+        for (const region of Object.keys(grouped).sort()) {
+          const section = document.createElement("div");
+          section.className = "mb-3";
+          section.innerHTML = `<h4 class="mb-3 text-teal text-decoration-underline"><strong>${region}</strong></h4>`;
+
+          const row = document.createElement("div");
+          row.className = "row g-3";
+
+          grouped[region].forEach((r) => row.appendChild(createCard(r)));
+          section.appendChild(row);
+          container.appendChild(section);
+        }
+      }
+
+      //Crea la card del singolo ristorante
+      function createCard(r) {
+        const col = document.createElement("div");
+        col.className = "col-lg-3 col-md-4";
+
+        const card = document.createElement("div");
+        card.className = "card h-100 shadow-sm cursor-pointer";
+        card.innerHTML = `
+                <div class="card-body">
+                  <h5 class="card-title text-teal">${r.name}</h5>
+                  <p class="card-text text-muted small">${r.address.street}, ${r.address.city} (${r.address.postalCode})</p>
+                </div>`;
+        card.onclick = () => showRestaurantDetail(r);
+        col.appendChild(card);
+        return col;
+      }
+
+      //Apre dettaglio ristorante
+      function showRestaurantDetail(rest) {
+        const detail = document.getElementById("restaurant-detail");
+        const content = document.getElementById("restaurant-detail-content");
+
+        //CONTATTI
+        const c = rest.contacts || {};
+        const contactsHtml = `
+                    <ul class="list-unstyled mb-0">
+                      ${
+                        c.tel
+                          ? `<li><i class="bi bi-telephone me-1"></i>${c.tel}</li>`
+                          : ""
+                      }
+                      ${
+                        c.tel2
+                          ? `<li><i class="bi bi-telephone me-1"></i>${c.tel2}</li>`
+                          : ""
+                      }
+                      ${
+                        c.email
+                          ? `<li><i class="bi bi-envelope me-1"></i><a class="text-warm-wood" href="mailto:${c.email}">${c.email}</a></li>`
+                          : ""
+                      }
+                    </ul>`;
+
+        //ORARI
+        const oh = rest.openingHours || {};
+        const hoursHtml =
+          oh.lunVen || oh.sabDom ? `<li>${formatHours(oh)}</li>` : "";
+
+        content.innerHTML = `
+                    <div class="row g-4">
+                      <div class="col-md-7">
+                        <h2 class="text-teal">${rest.name}</h2>
+                        <p class="mb-1">
+                          <strong>Indirizzo:</strong><br>
+                          ${rest.address.street}, ${rest.address.city} (${
+          rest.address.postalCode
+        }) - ${rest.address.region}
+                        </p>
+                        <p class="mb-1"><strong>Orari:</strong></p>
+                        <ul class="list-unstyled ms-2">${
+                          hoursHtml || "<li>Non specificati</li>"
+                        }</ul>
+
+                        <p class="mb-1 mt-3"><strong>Contatti:</strong></p>
+                        ${contactsHtml || "Non disponibili"}
+                      </div>
+                    </div>
+                    <div class="text-end mt-4 d-flex gap-2 justify-content-end">
+                      ${
+                        localStorage.getItem("role") === "client"
+                          ? `<a class="btn-teal-deep text-decoration-none" href="/menu.html?restaurantId=${rest._id}">
+                      <i class="bi bi-list-ul me-1"></i> Vai al menu
+                      </a>`
+                          : ""
+                      }
+                      <button class="btn-teal-deep" onclick="closeRestaurantDetail()">
+                      <i class="bi bi-x-lg"></i> Chiudi
+                     </button>
+                    </div>
+                  `;
+        detail.classList.remove("d-none");
+      }
+
+      /* helper per chiudere la modale */
+      function closeRestaurantDetail() {
+        document.getElementById("restaurant-detail").classList.add("d-none");
+      }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

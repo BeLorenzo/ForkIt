@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ForkIt – Orders</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Bootstrap & icone -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <!-- Palette e bottoni custom -->
+    <link rel="stylesheet" href="/css/palette.css" />
+    <link rel="stylesheet" href="/css/button.css" />
+
+    <script src="/utils.js"></script>
+  </head>
+  <body>
+    <header><div id="navbar-placeholder"></div></header>
+    <main class="container-fluid py-4">
+      <h2 class="mb-2">I miei Ordini</h2>
+
+      <!--  Filtro di ricerca -->
+      <div class="mb-4 row g-2 d-flex align-items-end">
+        <div class="col-3">
+          <input
+            class="form-control"
+            type="text"
+            id="order-search"
+            placeholder="Cerca per piatto..."
+          />
+        </div>
+        <div class="col-3" id="div-restaurant-select">
+          <select id="restaurant-select" class="form-select">
+            <option value="">-- Seleziona un ristorante --</option>
+          </select>
+        </div>
+        <div class="col-3">
+          <label for="date-filter-start">Dal</label>
+          <input class="form-control" type="date" id="date-filter-start" />
+        </div>
+        <div class="col-3">
+          <label for="date-filter-end">Al</label>
+          <input class="form-control" type="date" id="date-filter-end" />
+        </div>
+      </div>
+
+      <!--  Sezioni ordini -->
+      <div id="orders-consegna" class="mb-5">
+        <h4 class="text-teal">In consegna</h4>
+        <div class="accordion" id="accodion-consegna"></div>
+      </div>
+      <div id="orders-preparazione" class="mb-5">
+        <h4 class="text-teal">In preparazione</h4>
+        <div class="accordion" id="accodion-preparazione"></div>
+      </div>
+      <div id="orders-ordinato" class="mb-5">
+        <h4 class="text-teal">Ordinati</h4>
+        <div class="accordion" id="accodion-ordinato"></div>
+      </div>
+      <div id="orders-consegnato" class="mb-5">
+        <h4 class="text-teal">Consegnato</h4>
+        <div class="accordion" id="accodion-consegnato"></div>
+      </div>
+    </main>
+
+    <footer><div id="footer-placeholder"></div></footer>
+
+    <script>
+      //Creazione dinamica iniziale _ OK
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadNavbar();
+        setupNavbar();
+        loadFooter();
+        loadRestaurants();
+        if (localStorage.getItem("role") === "restorator")
+          document
+            .getElementById("div-restaurant-select")
+            .classList.add("d-none");
+        loadOrders();
+      });
+
+      // calcola ETA per ogni ordine considerando ordini precedenti
+      function computeEstimatedTimes(orders) {
+        const eta = {};
+        const byRest = {};
+
+        //Divide gli ordini nei vari ristoranti
+        orders.forEach((order) => {
+          if (!byRest[order.place]) {
+            byRest[order.place] = [];
+          }
+          byRest[order.place].push(order);
+        });
+
+        //Per ogni ristorante ordina la coda in base alla data
+        Object.values(byRest).forEach((orderQueue) => {
+          orderQueue.sort((a, b) => new Date(a.date) - new Date(b.date));
+          //Calcolo il minimo tra i tempi di attesa prima di accettare un nuovo ordine
+          const inPrepTimes = orderQueue
+            .filter((order) => order.state === "in preparazione")
+            .map((order) => order.waitingTime);
+
+          let attesaMinima = inPrepTimes.length ? Math.min(...inPrepTimes) : 0;
+
+          //Assegno ad ogni ordine eta corrispondente. Qui ho scelto di fare che il ristoratore puù potenzialmente mettere in preparazione
+          //più ordini se in grado di parallelizzare. Se in preparazione il tempo di attesa è quello solo suo. Se non in preparazione si somma il suo
+          // tempo con il minimo di attesa in preparazione + altri se precedenti
+          orderQueue.forEach((ordine) => {
+            let tempoAttesa = ordine.waitingTime;
+
+            if (ordine.state === "in preparazione") {
+              eta[ordine._id] = tempoAttesa;
+            } else if (ordine.state === "ordinato") {
+              eta[ordine._id] = attesaMinima + tempoAttesa;
+              attesaMinima += tempoAttesa;
+            }
+          });
+        });
+        return eta;
+      }
+
+      // Costruisce card ordine
+      function buildOrderCard(order, role, eta, containerId) {
+        //Scritta per piatto singolo
+        const foodsHtml = order.foods
+          .map(
+            (f) =>
+              `<li>${f.name} <span class="text-muted">x${f.quantity}</span></li>`
+          )
+          .join("");
+        const total = `€${(order.totalPrice / 100).toFixed(2)}`;
+        //Indico scritta tempo stimato solo se ordinato o in preparazione
+        const etaText =
+          order.state === "ordinato" || order.state === "in preparazione"
+            ? `<span class="text-muted ms-2">~ Tempo di attesa stimato: ${
+                eta[order._id]
+              } min</span>`
+            : "";
+
+        //Pulsanti per cambio stato
+        let btn = "";
+        if (role === "restorator") {
+          if (order.state === "ordinato")
+            btn = `<button class="btn-teal-deep py-1 fs-4 px-2 ms-3" onclick="updateOrderState(event,'${order._id}','ordinato')">Prepara</button>`;
+          else if (order.state === "in preparazione")
+            btn = `<button class="btn-teal-deep py-1 fs-4 px-2 ms-3" onclick="updateOrderState(event,'${order._id}','in preparazione')">Consegna</button>`;
+        } else if (role === "client" && order.state === "in consegna") {
+          btn = `<button class="btn-teal-deep py-1 px-2 ms-3 fs-4" onclick="updateOrderState(event,'${order._id}','in consegna')">Ritira</button>`;
+        }
+
+        const card = document.createElement("div");
+        card.className = "accordion-item";
+        card.innerHTML = `
+      <h2 class="accordion-header" id="heading${order._id}">
+        <div class="d-flex align-items-center">
+          <button class="accordion-button collapsed flex-grow-1 text-start" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#collapse${
+                    order._id
+                  }"
+                  aria-expanded="false" aria-controls="collapse${order._id}">
+            Ordine del ${new Date(
+              order.date
+            ).toLocaleString()} – Totale: ${total} ${etaText}
+          </button>
+          ${btn}
+        </div>
+      </h2>
+      <div id="collapse${order._id}" class="accordion-collapse collapse"
+           aria-labelledby="heading${
+             order._id
+           }" data-bs-parent="#${containerId}">
+        <div class="accordion-body">
+          <ul class="mb-2">${foodsHtml}</ul>
+        </div>
+      </div>`;
+        //Per facilitare filtri
+        card.dataset.restaurant = order.place.toLowerCase();
+        card.dataset.date = order.date;
+        card.dataset.meals = order.foods
+          .map((f) => f.name.toLowerCase())
+          .join(",");
+        return card;
+      }
+
+      //Aggiorna ordini
+      async function updateOrderState(e, orderId, currentState) {
+        e.stopPropagation();
+        try {
+          const res = await fetch(`/orders/${orderId}/${currentState}`, {
+            method: "PATCH",
+          });
+          if (!res.ok) {
+            const { message } = await res.json();
+            return showTemporaryAlert("Errore: " + message, "danger");
+          }
+          loadOrders();
+        } catch (err) {
+          showTemporaryAlert("Errore di rete: " + err.message, "danger");
+        }
+      }
+
+      //Carica gli ordini del cliente
+      async function loadOrders() {
+        const user = await loadUserData(localStorage.getItem("user_id"));
+        if (user.role === "client") {
+          const resUser = await fetch(
+            `/users/${localStorage.getItem("user_id")}/orders`
+          );
+
+          if (!resUser.ok) {
+            const err = await res.json();
+            return showTemporaryAlert("Errore: " + err.message, "danger");
+          }
+
+          const ordersUser = await resUser.json();
+          //Se risulta vuoto chiamo comunque renderOrders ma con array vuoti
+          if (!ordersUser) return renderOrders([], [], user.role);
+
+          const placeIds = [...new Set(ordersUser.map((o) => o.place))];
+
+          //Mi prendo gli ordini totali divisi per ogni ristorante. Mi serve per calcolare tempo stimato degli ordini utente
+          const allQueues = await Promise.all(
+            placeIds.map(async (id) => {
+              const r = await fetch(`/restaurants/${id}/orders`);
+              if (!r.ok) {
+                const err = await r.json();
+                return showTemporaryAlert("Errore: " + err.message, "danger");
+              }
+              return await r.json();
+            })
+          );
+          //Unisco tutti gli ordini di tutti i ristoranti che poi la funzione per stima me li divide per ristorante ma almeno la chiamo
+          //una volta sola
+          const ordersRest = allQueues.flat();
+          renderOrders(ordersRest, ordersUser, user.role);
+        } else {
+          const res = await fetch(`/restaurants/${user.restaurant}/orders`);
+          if (!res.ok) {
+            const err = await res.json();
+            return showTemporaryAlert("Errore: " + err.message, "danger");
+          }
+          const ordersRest = await res.json();
+          const ordersUser = [];
+          renderOrders(ordersRest, ordersUser, user.role);
+        }
+      }
+
+      // Funzione di ordinamento ordini in base allo stato
+      function orderSort(a, b, state) {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (state === "consegnato") {
+          // Consegnati: data più recente in alto (descendente)
+          return dateB - dateA;
+        } else {
+          // Tutti gli altri: data più vecchia in alto (ascendente)
+          return dateA - dateB;
+        }
+      }
+
+      //Mostra ordini
+      async function renderOrders(ordersRest, ordersUser, role) {
+        //Scelgo quali sono gli ordini base che devo valutare -> focus cliente o ristorante
+        const baseOrders = role === "client" ? ordersUser : ordersRest;
+
+        const statusMap = {
+          "in preparazione": document.getElementById("accodion-preparazione"),
+          "in consegna": document.getElementById("accodion-consegna"),
+          consegnato: document.getElementById("accodion-consegnato"),
+          ordinato: document.getElementById("accodion-ordinato"),
+        };
+
+        for (const [state, container] of Object.entries(statusMap)) {
+          const hasOrders = baseOrders.some((order) => order.state === state);
+          if (hasOrders) {
+            container.innerHTML = "";
+          } else {
+            switch (state) {
+              case "ordinato":
+                container.innerHTML =
+                  "<p class='no-orders'>Nessun ordine ordinato</p>";
+                break;
+              case "in preparazione":
+                container.innerHTML =
+                  "<p class='no-orders'>Nessun ordine in preparazione</p>";
+                break;
+              case "in consegna":
+                container.innerHTML =
+                  "<p class='no-orders'>Nessun ordine in consegna</p>";
+                break;
+              case "consegnato":
+                container.innerHTML =
+                  "<p class='no-orders'>Nessun ordine consegnato</p>";
+                break;
+              default:
+                container.innerHTML = "";
+            }
+          }
+        }
+
+        const orders = await Promise.all(
+          baseOrders.map(async (order) => {
+
+            //Piatti ordine
+            const foods = await Promise.all(
+              order.foods.map(async (f) => {
+                const food = await loadMealData(f.mealId);
+                return { ...f, name: food.strMeal };
+              })
+            );
+
+            return { ...order, foods };
+          })
+        );
+        const eta = computeEstimatedTimes(ordersRest);
+
+        for (const [state, container] of Object.entries(statusMap)) {
+          if (!container) continue;
+
+          // Filtra ordini per stato
+          let filteredOrders = orders.filter((order) => order.state === state);
+          if (filteredOrders.length === 0) continue;
+
+          if (role === "client") {
+            // Raggruppa per ristorante 
+            const grouped = filteredOrders.reduce((acc, order) => {
+              if (!acc[order.place]) acc[order.place] = [];
+              acc[order.place].push(order);
+              return acc;
+            }, {}); //{} indica che accumulatore parte come oggetto vuoto al quale aggiungo ad ogni passo
+            console.log(grouped)
+            const places = Object.keys(grouped).sort((a, b) =>
+              a.localeCompare(b)
+            );
+
+            // Per ogni ristorante crea un titolo e ordina gli ordini per data
+            for (const place of places) {
+              const rist = await loadRestaurantData(place)
+              const restaurantGroup = document.createElement("section");
+              restaurantGroup.className = "restaurant-group mb-4";
+
+              // Titolo ristorante
+              const title = document.createElement("h5");
+              title.className = "text-warm-wood";
+              title.textContent = `Ristorante: Forkit ${rist.name}`;
+              restaurantGroup.appendChild(title);
+
+              // Ordina ordini per data
+              grouped[place].sort((a, b) => orderSort(a, b, state));
+
+              grouped[place].forEach((order) =>
+                restaurantGroup.appendChild(
+                  buildOrderCard(order, role, eta, container.id)
+                )
+              );
+              container.appendChild(restaurantGroup);
+            }
+          } else {
+            const restaurantGroup = document.createElement("section");
+            restaurantGroup.className = "restaurant-group mb-4";
+
+            filteredOrders
+              .sort((a, b) => orderSort(a, b, state))
+              .forEach((order) =>
+                restaurantGroup.appendChild(
+                  buildOrderCard(order, role, eta, container.id)
+                )
+              );
+
+            container.appendChild(restaurantGroup);
+          }
+        }
+        applyFilters();
+      }
+
+      //Filtri
+      const searchInput = document.getElementById("order-search");
+      const restaurantSelect = document.getElementById("restaurant-select");
+      const dateStartInput = document.getElementById("date-filter-start");
+      const dateEndInput = document.getElementById("date-filter-end");
+
+      // Event listeners per attivare filtro live
+      searchInput.addEventListener("input", applyFilters);
+      restaurantSelect.addEventListener("change", applyFilters);
+      dateStartInput.addEventListener("change", applyFilters);
+      dateEndInput.addEventListener("change", applyFilters);
+
+      //Applica filtri
+      async function applyFilters() {
+        const searchVal = searchInput.value.toLowerCase();
+        let restaurantVal = restaurantSelect.value;
+        const dateStartVal = dateStartInput.value;
+        const dateEndVal = dateEndInput.value;
+
+        if (localStorage.getItem("role") === "restorator") {
+          restaurantVal = ""; // ignoro il filtro ristorante per i restorator
+        }
+
+        const activeFilters =
+          searchVal !== "" ||
+          restaurantVal !== "" ||
+          dateStartVal !== "" ||
+          dateEndVal !== "";
+
+        // Prendi tutte le card accordion
+        const allCards = document.querySelectorAll(".accordion-item");
+
+        //Valuto i filtri su ogni card
+        allCards.forEach((card) => {
+          const cardMeals = card.dataset.meals.toLowerCase();
+          const cardRestaurant = card.dataset.restaurant;
+          const cardDate = card.dataset.date.slice(0, 10); // yyyy-mm-dd
+
+          // Filtri
+          const matchMeal = searchVal === "" || cardMeals.includes(searchVal);
+          const matchRestaurant =
+            restaurantVal === "" || cardRestaurant === restaurantVal;
+          const matchDateStart =
+            dateStartVal === "" || cardDate >= dateStartVal;
+          const matchDateEnd = dateEndVal === "" || cardDate <= dateEndVal;
+
+          if (matchMeal && matchRestaurant && matchDateStart && matchDateEnd) {
+            card.classList.remove("d-none");
+          } else {
+            card.classList.add("d-none");
+          }
+        });
+
+        // Gestione visibilità sezioni interne (restaurant-group)
+        document.querySelectorAll(".restaurant-group").forEach((section) => {
+          const cards = section.querySelectorAll(".accordion-item");
+          const allHidden = Array.from(cards).every((card) =>
+            card.classList.contains("d-none")
+          );
+          if (allHidden) {
+            section.classList.add("d-none");
+          } else {
+            section.classList.remove("d-none");
+          }
+        });
+
+        const containers = [
+          "orders-consegna",
+          "orders-preparazione",
+          "orders-ordinato",
+          "orders-consegnato",
+        ];
+
+        containers.forEach((id) => {
+          const container = document.getElementById(id);
+          if (!container) return;
+
+          const accordion = container.querySelector(".accordion");
+          if (!accordion) return;
+          // Prendo tutte le sezioni .restaurant-group dentro questo accordion e tengo solo le visibili
+          const sections = accordion.querySelectorAll(".restaurant-group");
+          const visibleSections = Array.from(sections).filter(
+            (s) => !s.classList.contains("d-none")
+          );
+
+          let msgEl = container.querySelector(".filter-message");
+          if (!msgEl) {
+            msgEl = document.createElement("div");
+            msgEl.classList.add(
+              "filter-message",
+              "text-muted",
+              "fst-italic",
+              "mt-2"
+            );
+            container.appendChild(msgEl);
+          }
+          const noOrdersEl = accordion.querySelector(".no-orders");
+          // Se non ci sono sezioni, o se tutte le sezioni sono nascoste, nascondo il container
+          if (activeFilters) {
+            if (sections.length === 0 || visibleSections.length === 0) {
+              if (noOrdersEl) noOrdersEl.classList.add("d-none");
+              msgEl.textContent = "Non ci sono ordini con questi filtri attivi";
+              msgEl.classList.remove("d-none");
+            } else {
+              if (noOrdersEl) noOrdersEl.classList.add("d-none");
+              msgEl.classList.add("d-none");
+            }
+          } else {
+            // Nessun filtro attivo
+            if (sections.length === 0 || visibleSections.length === 0) {
+              if (noOrdersEl) noOrdersEl.classList.remove("d-none");
+            } else {
+              if (noOrdersEl) noOrdersEl.classList.add("d-none");
+            }
+            msgEl.classList.add("d-none");
+          }
+        });
+      }
+
+      //Carica ristoranti in select 
+      async function loadRestaurants() {
+        const select = document.getElementById("restaurant-select");
+
+        select.innerHTML = `<option value="">-- Seleziona un ristorante --</option>`;
+
+        try {
+          const res = await fetch("http://localhost:3001/restaurants");
+          const restaurants = await res.json();
+
+          restaurants.forEach((r) => {
+            const option = document.createElement("option");
+            option.value = r._id;
+            option.textContent = `${r.name} - ${r.address.street}, ${r.address.city}`;
+            select.appendChild(option);
+          });
+        } catch (err) {
+          console.error("Errore caricamento ristoranti:", err);
+        }
+      }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

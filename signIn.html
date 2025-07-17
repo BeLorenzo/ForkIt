@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>ForkIt – SignIn</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+    <!-- Bootstrap & Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <!-- Palette + bottoni -->
+    <link rel="stylesheet" href="/css/palette.css" />
+    <link rel="stylesheet" href="/css/button.css" />
+
+    <script src="/utils.js"></script>
+  </head>
+
+  <body class="d-flex flex-column min-vh-100">
+    <header><div id="navbar-placeholder"></div></header>
+
+    <main>
+      <div class="container pt-4">
+        <div id="alert" class="alert d-none" role="alert"></div>
+
+        <div class="row justify-content-center">
+          <div
+            id="form"
+            class="bg-white col-12 col-md-6 col-lg-5 p-4 rounded shadow-sm"
+          >
+            <h2 class="mb-4 text-center text-teal">Sign In</h2>
+
+            <div class="mb-3">
+              <label for="name" class="form-label">First Name</label>
+              <input
+                id="firstName"
+                type="text"
+                class="form-control"
+                placeholder="Inserisci il tuo nome"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="surname" class="form-label">Last Name</label>
+              <input
+                id="lastName"
+                type="text"
+                class="form-control"
+                placeholder="Inserisci il tuo cognome"
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input
+                id="email"
+                type="email"
+                class="form-control"
+                placeholder="Inserisci la tua email"
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="password" class="form-label">Password</label>
+              <input
+                id="password"
+                type="password"
+                class="form-control"
+                placeholder="*********"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="confirmPassword" class="form-label"
+                >Conf. Password</label
+              >
+              <input
+                id="confirmPassword"
+                type="password"
+                class="form-control"
+                placeholder="*********"
+              />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label d-block">Who are you?</label>
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="role"
+                  id="role-client"
+                  value="client"
+                  checked
+                />
+                <label class="form-check-label" for="role-client">Client</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="role"
+                  id="roleRestorator"
+                  value="restorator"
+                />
+                <label class="form-check-label" for="roleRestorator"
+                  >Restorator</label
+                >
+              </div>
+            </div>
+
+            <div class="mb-3 d-none" id="restaurantCodeContainer">
+              <label for="restaurantCode" class="form-label"
+                >Resturant Secret Code</label
+              >
+              <input
+                id="restaurantCode"
+                type="text"
+                class="form-control"
+                placeholder="Insert Secret Code"
+              />
+            </div>
+
+            <button class="btn-teal-deep w-100" onclick="register()">
+              <i class="bi bi-person-plus-fill"></i> Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer><div id="footer-placeholder"></div></footer>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadNavbar();
+        setupNavbar();
+        loadFooter();
+
+        //Mostra/nasconde inserimento codice segreto
+        document.querySelectorAll('input[name="role"]').forEach((radio) => {
+          radio.addEventListener("change", () => {
+            const group = document.getElementById("restaurantCodeContainer");
+            if (document.getElementById("roleRestorator").checked) {
+              group.classList.remove("d-none");
+            } else {
+              group.classList.add("d-none");
+            }
+          });
+        });
+      });
+
+      //REGISTRAZIONE
+      async function register() {
+        const name = document.getElementById("firstName").value.trim();
+        const surname = document.getElementById("lastName").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        const confirmPassword =
+          document.getElementById("confirmPassword").value;
+        const role = document.querySelector('input[name="role"]:checked').value;
+
+        if (password !== confirmPassword) {
+          showAlert("Le password non coincidono", "danger");
+          return;
+        }
+
+        if (role === "client") {
+          try {
+            const res = await fetch("http://localhost:3001/users", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name, surname, email, password, role }),
+            });
+            const data = await res.json();
+            if (!data.success) return showAlert(data.message, "danger");
+
+            showAlert(
+              `Registrazione completata! Ora puoi <a class='text-warm-wood' href='login.html'>accedere</a>.`,
+              "success"
+            );
+          } catch (err) {
+            console.error(err);
+            showAlert("Errore di connessione", "danger");
+          }
+        } else if (role === "restorator") {
+          const code = document.getElementById("restaurantCode").value.trim();
+          if (!code)
+            return showAlert("Inserire codice ristorante", "danger");
+
+          try {
+            const resCode = await fetch(
+              `http://localhost:3001/restaurants/code/${code}`
+            );
+            if (!resCode.ok) {
+              showAlert("Codice ristorante non valido", "danger");
+              return;
+            }
+            const dataCode = await resCode.json();
+            const restaurantId = dataCode._id;
+            const foods = dataCode.menu;
+            const res = await fetch("http://localhost:3001/users", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name,
+                surname,
+                email,
+                password,
+                role,
+                restaurantId,
+                foods,
+              }),
+            });
+            const data = await res.json();
+            if (!data.success) return showAlert(data.message, "danger");
+
+            showAlert(
+              "Registrazione completata! Ora puoi <a class='text-warm-wood' href='login.html'>accedere</a>.",
+              "success"
+            );
+          } catch (err) {
+            console.error(err);
+            showAlert("Errore durante la registrazione", "danger");
+          }
+        }
+      }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

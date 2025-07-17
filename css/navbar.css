@@ -1,0 +1,22 @@
+       .navbar {
+        background-color: var(--teal-deep);
+      }
+
+      .navbar-brand .title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--cream-white);
+      }
+
+      .navbar-brand .subtitle {
+        font-size: 0.75rem;
+        color: var(--warm-wood);
+      }
+
+      .nav-link {
+        color: var(--cream-white) !important;
+      }
+
+      .nav-link:hover {
+        color: var(--warm-wood) !important;
+      }

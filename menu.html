@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ForkIt – Menù</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Bootstrap & icone -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <!-- Palette e bottoni custom -->
+    <link rel="stylesheet" href="/css/palette.css" />
+    <link rel="stylesheet" href="/css/button.css" />
+    <link rel="stylesheet" href="/css/scroll.css" />
+    <link rel="stylesheet" href="/css/detail.css" />
+
+    <script src="/utils.js"></script>
+
+    <style>
+      #meal-list {
+        max-height: 60em;
+        overflow-y: auto;
+      }
+      .delete-btn i {
+        color: var(--teal-deep);
+        transition: color 0.2s;
+      }
+      .delete-btn:hover i {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <header><div id="navbar-placeholder"></div></header>
+
+    <main class="container-fluid py-4">
+      <h3 id="titolo" class="text-teal mb-3"></h3>
+
+      <!-- Select ristorante - No per admin -->
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <select id="restaurant-select" class="form-select">
+            <option value="">-- Seleziona un ristorante --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Filtri testo + prezzo -->
+      <div id="filters" class="row g-2 mb-3">
+        <div class="col-md-6">
+          <input
+            id="search-input"
+            class="form-control"
+            placeholder="Cerca un piatto..."
+          />
+        </div>
+        <div class="col-md-2">
+          <input
+            id="min-price"
+            type="number"
+            min="0"
+            class="form-control"
+            placeholder="Min €"
+          />
+        </div>
+        <div class="col-md-2">
+          <input
+            id="max-price"
+            type="number"
+            min="0"
+            class="form-control"
+            placeholder="Max €"
+          />
+        </div>
+        <div class="col-md-2">
+          <button class="btn-teal-deep w-100" onclick="loadMeals()">
+            <i class="bi bi-search"></i> Filtra
+          </button>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Categorie. Caricate dinamicamente tranne All -->
+        <div class="col-md-3">
+          <h4 class="text-teal mb-3">Categorie</h4>
+          <button
+            id="category-all"
+            class="btn-teal-deep w-100 mb-1 p-2 border-0 text-start rounded-2"
+            onclick="resetCategory()"
+          >
+            All
+          </button>
+          <div id="category-container">
+            <button
+              id="category-template"
+              class="btn-teal-deep w-100 mb-1 p-2 border-0 text-start rounded-2 d-none"
+            ></button>
+          </div>
+        </div>
+
+        <!-- Piatti -->
+        <section class="col-md-9">
+          <div id="meal-list" class="row scroll-container"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Form cibi - Inserimento/Modifica -->
+    <div id="edit-food" class="detail d-none">
+      <div class="container py-4">
+        <button
+          id="close-food"
+          class="btn-teal-deep mb-3"
+          onclick="closeFood()"
+        >
+          <i class="bi bi-x-lg"></i> Chiudi
+        </button>
+
+        <form id="food-form" class="bg-white p-4 rounded">
+          <h4 class="text-teal mb-3">Inserisci/modifica cibo</h4>
+
+          <div class="mb-3">
+            <label class="form-label">Link immagine</label>
+            <input class="form-control" id="edit-img" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Nome piatto</label>
+            <input class="form-control" id="edit-name" required />
+          </div>
+
+          <div id="edit-category-container" class="mb-3">
+            <label class="form-label">Categoria</label>
+            <input class="form-control" id="edit-category" name="category" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Ingredienti (separati da virgola)</label>
+            <input
+              class="form-control"
+              id="edit-ing"
+              required
+              placeholder="uova, farina, ..."
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"
+              >Misure (stesso ordine ingredienti, seperati da virgola)</label
+            >
+            <input
+              class="form-control"
+              id="edit-meas"
+              required
+              placeholder="2, 100 g, ..."
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Preparazione</label>
+            <textarea
+              class="form-control"
+              id="edit-inst"
+              required
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Tags (seperati da virgola)</label>
+            <input
+              class="form-control"
+              id="edit-tags"
+              placeholder="Cake,Snack,Grill..."
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Link YouTube</label>
+            <input class="form-control" id="edit-yt" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Price</label>
+            <input
+              type="number"
+              step="0.01"
+              required
+              class="form-control"
+              id="edit-price"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Prep. Time</label>
+            <input type="number" required class="form-control" id="edit-time" />
+          </div>
+
+          <button type="submit" class="btn-teal-deep">
+            <i class="bi bi-check-lg me-1"></i> Salva nel menu
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dettaglio cibo -->
+    <div id="meal-detail" class="detail d-none">
+      <div class="container py-4">
+        <button
+          id="close-detail"
+          class="btn-teal-deep mb-3"
+          onclick="closeDetail()"
+        >
+          <i class="bi bi-x-lg"></i> Chiudi
+        </button>
+        <div id="meal-detail-content" class="bg-white p-4 rounded"></div>
+      </div>
+    </div>
+
+    <footer><div id="footer-placeholder"></div></footer>
+
+    <script>
+      //Variabili Globali per filtri e flag
+      let currentCategory = null;
+      let currentRestaurant = null;
+      let editingFoodId = null;
+      let loggedUserRole = localStorage.getItem("role");
+      let user = null;
+
+      //Creazione dinamica iniziale
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadNavbar();
+        setupNavbar();
+        await loadFooter();
+        if (loggedUserRole) {
+          user = await loadUserData();
+          if (loggedUserRole === "admin")
+            document
+              .getElementById("restaurant-select")
+              .classList.add("d-none");
+          else currentRestaurant = user.restaurant;
+        }
+        await loadRestaurants();
+        await loadCategories();
+        preselectRestaurantFromURL();
+        await loadMeals();
+
+        //Modifica titolo in base se client o restorator
+        const titolo = document.getElementById("titolo");
+        if (user)
+          titolo.innerHTML =
+            user.role === "restorator"
+              ? "Crea il tuo menu"
+              : user.role === "admin"
+              ? "Gestisci piatti standard"
+              : "Scopri il nostro menu";
+        else titolo.innerHTML = "Scopri il nostro menu";
+      });
+
+      //Blocca submit base del form modifica/aggiunta cibo
+      document.getElementById("food-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        addFood();
+      });
+
+      //Seleziona ristorante di cui mostrare menù da query -> usato da restaurant-details per collegamento veloce
+      function preselectRestaurantFromURL() {
+        if (localStorage.getItem("role") === "admin") return;
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get("restaurantId");
+        if (!id) return;
+
+        const select = document.getElementById("restaurant-select");
+        // se l’ID esiste tra le option lo seleziono
+        if ([...select.options].some((opt) => opt.value === id)) {
+          select.value = id;
+          // attiva filtro come se avessi selezionato ristorante da select
+          select.dispatchEvent(new Event("change"));
+        }
+      }
+
+      //Inserisci nuovo piatto nel menu o modifica se in fase editing
+      async function addFood() {
+        const img = document.getElementById("edit-img").value.trim();
+        const name = document.getElementById("edit-name").value.trim();
+        const ingredients = document
+          .getElementById("edit-ing")
+          .value.trim()
+          .split(",");
+        const measures = document
+          .getElementById("edit-meas")
+          .value.trim()
+          .split(",");
+        const tags = document
+          .getElementById("edit-tags")
+          .value.trim()
+          .split(",");
+        const instructions = document.getElementById("edit-inst").value.trim();
+        const ytLink = document.getElementById("edit-yt").value.trim();
+        const category =
+          loggedUserRole === "restorator"
+            ? "special"
+            : document.getElementById("edit-category").value.trim();
+        const price = document.getElementById("edit-price").value * 100;
+        const time = document.getElementById("edit-time").value;
+
+        const newFood = {
+          strMeal: name,
+          strCategory: category,
+          strInstructions: instructions,
+          strMealThumb: img,
+          strYoutube: ytLink,
+          ingredients: ingredients,
+          measures: measures,
+          price: price,
+          prepTime: time,
+          strTags: tags,
+        };
+        let url;
+        let options;
+        if (loggedUserRole === "restorator")
+          newFood.restaurant = user.restaurant;
+        if (editingFoodId) {
+          url = `http://localhost:3001/meals/${editingFoodId}`;
+          options = {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newFood),
+          };
+        } else {
+          url = `http://localhost:3001/meals`;
+          options = {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newFood),
+          };
+        }
+        try {
+          const res = await fetch(url, options);
+          const data = await res.json();
+          showTemporaryAlert(data.message, "success");
+        } catch (err) {
+          console.error(err);
+          showTemporaryAlert(`Errore: ${err}`, "danger");
+        }
+        closeFood();
+      }
+
+      //Chiusura dettaglio
+      function closeDetail() {
+        document.getElementById("meal-detail").classList.add("d-none");
+      }
+
+      //Chiusura modifica Cibo
+      function closeFood() {
+        document.getElementById("edit-food").classList.add("d-none");
+        document.getElementById("edit-img").value = "";
+        document.getElementById("edit-name").value = "";
+        document.getElementById("edit-ing").value = "";
+        document.getElementById("edit-meas").value = "";
+        document.getElementById("edit-inst").value = "";
+        document.getElementById("edit-yt").value = "";
+        document.getElementById("edit-price").value = "";
+        document.getElementById("edit-tags").value = "";
+        document.getElementById("edit-time").value = "";
+        document.getElementById("edit-category").value = "";
+
+        editingFoodId = null;
+        loadMeals();
+        loadCategories();
+      }
+
+      //Elimina scelta categorie
+      function resetCategory() {
+        currentCategory = null;
+        document
+          .querySelectorAll(".btn-teal-deep")
+          .forEach((btn) => btn.classList.remove("active"));
+        document.getElementById("category-all").classList.add("active");
+        loadMeals();
+      }
+
+      //Carica dinamnicamente pulsanti categorie
+      async function loadCategories() {
+        const container = document.getElementById("category-container");
+        const modello = document.getElementById("category-template");
+        container.innerHTML = "";
+
+        try {
+          const res = await fetch("http://localhost:3001/categories");
+          const data = await res.json();
+          const categories = data.sort();
+
+          categories.forEach((cat) => {
+            const clone = modello.cloneNode(true);
+            clone.classList.remove("d-none");
+            clone.textContent = cat;
+            clone.onclick = () => {
+              document
+                .querySelectorAll(".btn-teal-deep")
+                .forEach((btn) => btn.classList.remove("active"));
+              clone.classList.add("active");
+              currentCategory = cat;
+              loadMeals();
+            };
+            container.appendChild(clone);
+          });
+          if (currentRestaurant) {
+            const clone = modello.cloneNode(true);
+            clone.classList.remove("d-none");
+            clone.textContent = "Special";
+            clone.onclick = () => {
+              document
+                .querySelectorAll(".btn-teal-deep")
+                .forEach((btn) => btn.classList.remove("active"));
+              clone.classList.add("active");
+              currentCategory = "special";
+              loadMeals();
+            };
+            container.appendChild(clone);
+          }
+          if (
+            loggedUserRole === "admin" ||
+            (loggedUserRole === "restorator" &&
+              currentRestaurant === user.restaurant)
+          ) {
+            const addBtn = modello.cloneNode(true);
+            addBtn.classList.remove("d-none");
+            addBtn.innerHTML = `<i class="bi bi-plus-lg me-1"></i> ${
+              loggedUserRole === "admin" ? "Add Food" : "Add specialty"
+            }`;
+            addBtn.onclick = () => {
+              document.getElementById("edit-food").classList.remove("d-none");
+              if (loggedUserRole === "restorator") {
+                document
+                .getElementById("edit-category-container")
+                .classList.add("d-none");
+                document.getElementById("edit-category").required = false;
+              };
+            }
+            container.appendChild(addBtn);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      //In base a filtri (categoria, selezione ristorante, nome, prezzo) carica ogni volta la
+      //lista dei cibi
+      async function loadMeals() {
+        const currentNameFilter = document
+          .getElementById("search-input")
+          .value.trim();
+        const currentMinPrice = parseFloat(
+          document.getElementById("min-price").value
+        );
+        const currentMaxPrice = parseFloat(
+          document.getElementById("max-price").value
+        );
+
+        const params = new URLSearchParams();
+        if (currentCategory) params.append("category", currentCategory);
+        if (currentNameFilter) params.append("name", currentNameFilter);
+        if (!isNaN(currentMinPrice) && currentMinPrice)
+          params.append("minPrice", currentMinPrice);
+        if (!isNaN(currentMaxPrice) && currentMaxPrice)
+          params.append("maxPrice", currentMaxPrice);
+        let url;
+        if (currentRestaurant) {
+          if (loggedUserRole == "restorator" && currentCategory === "special") {
+            url = `http://localhost:3001/restaurants/${currentRestaurant}/specials?${params.toString()}`;
+          } else {
+            url = `http://localhost:3001/restaurants/${currentRestaurant}/menu?${params.toString()}`;
+          }
+        } else {
+          url = `http://localhost:3001/meals?${params.toString()}`;
+        }
+
+        try {
+          const res = await fetch(url);
+          const meals = (await res.json()).filter((m) => !m.deleted);
+          renderMeals(meals);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      //Mostra le card dei cibi con distinzione per preferiti e quant'altro
+      function renderMeals(meals) {
+        const container = document.getElementById("meal-list");
+        container.innerHTML = "";
+
+        if (!meals.length) {
+          container.innerHTML =
+            "<p class='text-muted'>Nessun piatto trovato.</p>";
+          return;
+        }
+
+        const isClient = loggedUserRole === "client";
+        const isRestorator = loggedUserRole === "restorator";
+        const isAdmin = loggedUserRole === "admin";
+        const isGuest = !loggedUserRole;
+
+        //Per ogni cibo fa card e controlli dei preferiti per cuore diverso
+        meals.forEach((meal) => {
+          const isFav =
+            !isAdmin && user && user.foods
+              ? user.foods.includes(meal._id)
+              : false;
+          const card = document.createElement("div");
+          card.className = "col-lg-3 col-6 mb-4";
+
+          card.innerHTML = `
+              <div class="card h-100 cursor-pointer z-0 position-relative">
+                ${
+                  isClient || isRestorator
+                    ? `<button class="fav-btn position-absolute start-0 bottom-0 mb-1 ms-2 border-0 fs-5 bg-transparent icon-btn
+                ${isFav ? "filled" : ""}
+              ">
+                <i class="bi ${isFav ? "bi-heart-fill" : "bi-heart"}"></i>
+              </button>`
+                    : ""
+                }
+              ${
+                isClient && currentRestaurant
+                  ? `<button class="cart-btn position-absolute start-0 bottom-0 mb-1 ms-5 border-0 bg-transparent fs-5 icon-btn">
+                       <i class="bi bi-cart-plus"></i>
+                     </button>`
+                  : ""
+              }
+              ${
+                isAdmin ||
+                (currentRestaurant &&
+                  isRestorator &&
+                  currentCategory == "special")
+                  ? `<button class="mod-btn position-absolute bg-transparent start-0 bottom-0 mb-1 ms-2 ms-5 border-0 fs-5 icon-btn">
+                      <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="position-absolute z-1 bg-transparent start-0 top-0 border-0 fs-5 delete-btn">
+                      <i class="bi bi-trash"></i>
+                      </button>`
+                  : ""
+              }
+                  <div class="ratio ratio-1x1">
+          <img src="${meal.strMealThumb}" class="img-fluid object-fit-cover">
+        </div>
+                  <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                      <h5 class="text-teal">${meal.strMeal}</h5>
+                      <p class="text-muted">${meal.strTags || ""}</p>
+                    </div>
+                         <div class="text-end text-muted px-3 pb-2"><small>€ ${(
+                           meal.price / 100
+                         ).toFixed(2)}</small></div>
+                  </div>
+                </div>`;
+
+          //Gestione click
+          card.querySelector(".card").addEventListener("click", (e) => {
+            const btn = e.target.closest(".icon-btn, .delete-btn");
+
+            if (!btn) return showMealDetail(meal); // Se non clicco nessun bottone
+
+            e.stopPropagation();
+
+            if (btn.matches(".fav-btn"))
+              return toggleFavorite(meal._id, btn, card);
+            if (btn.matches(".cart-btn"))
+              return addToCart(meal._id, meal.strMeal);
+            if (btn.matches(".mod-btn")) {
+              if (loggedUserRole === "restorator") {
+
+                document
+                .getElementById("edit-category-container")
+                .classList.add("d-none");
+                document.getElementById("edit-category").required = false;
+              }
+              document.getElementById("edit-food").classList.remove("d-none");
+              return modifyFood(meal);
+            }
+            if (btn.matches(".delete-btn")) {
+              deleteFood(meal._id);
+              return card.remove();
+            }
+          });
+
+          container.appendChild(card);
+        });
+
+        if (loggedUserRole === "admin")
+          document
+            .querySelectorAll(".mod-btn")
+            .forEach((btn) => btn.classList.remove("ms-5"));
+      }
+
+      // Aggiunge 1 pezzo al carrello, mostra alert temporaneo
+      function addToCart(mealId, mealName) {
+        let cart = JSON.parse(localStorage.getItem("cart")) || {};
+        if (!cart[currentRestaurant]) {
+          cart[currentRestaurant] = {};
+        }
+        cart[currentRestaurant][mealId] =
+          (cart[currentRestaurant][mealId] || 0) + 1;
+        localStorage.setItem("cart", JSON.stringify(cart));
+        showTemporaryAlert(`${mealName} aggiunto al carrello`, "success");
+      }
+
+      //Gestisce il clic del bottone preferiti
+      async function toggleFavorite(mealId, btn, card) {
+        if (!user) return;
+        const isFav = user && user.foods ? user.foods.includes(mealId) : false;
+        const url = `http://localhost:3001/users/${user._id}/favorites`;
+        const options = {
+          method: isFav ? "DELETE" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mealId }),
+        };
+
+        try {
+          const res = await fetch(url, options);
+          if (res.ok) {
+            //Se era già fav fav tolgo il cuore pieno
+            if (isFav) {
+              user.foods = user.foods.filter((id) => id !== mealId);
+              btn.classList.remove("filled");
+              btn.innerHTML = `<i class="bi bi-heart"></i>`;
+              if (loggedUserRole == "restorator") {
+                showTemporaryAlert("Piatto rimosso da menu", "success");
+                card.remove();
+              } else
+                showTemporaryAlert("Piatto rimosso da preferiti", "success");
+            } else {
+              //Altrimenti lo aggiungo
+              if (!user.foods) user.foods = [];
+              user.foods.push(mealId);
+              btn.classList.add("filled");
+              btn.innerHTML = `<i class="bi bi-heart-fill"></i>`;
+              loggedUserRole == "restorator"
+                ? showTemporaryAlert("Piatto aggiunto a menu", "success")
+                : showTemporaryAlert("Piatto aggiunto a preferiti", "success");
+            }
+          } else {
+            showTemporaryAlert(
+              "Errore nel salvataggio/rimozione preferito",
+              "danger"
+            );
+          }
+        } catch (err) {
+          showTemporaryAlert("Errore nella richiesta", "danger");
+        }
+      }
+
+      //Elimina Cibo
+      async function deleteFood(mealId) {
+        const url = `http://localhost:3001/meals/${mealId}`;
+        const options = {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        };
+
+        try {
+          const res = await fetch(url, options);
+          if (!res.ok) {
+            showTemporaryAlert(
+              `Errore nella rimozione piatto:${res.error}`,
+              "danger"
+            );
+          }
+          showTemporaryAlert("Piatto eliminato con successo", "success");
+        } catch (err) {
+          showTemporaryAlert(
+            `Errore nella richiesta di eliminazione:${err}`,
+            "danger"
+          );
+        }
+        loadMeals();
+        loadCategories();
+      }
+
+      //Carica elenco ristoranti in select
+      async function loadRestaurants() {
+        const select = document.getElementById("restaurant-select");
+
+        select.innerHTML = `<option value="">-- Seleziona un ristorante --</option>`;
+
+        try {
+          const res = await fetch("http://localhost:3001/restaurants");
+          const restaurants = await res.json();
+
+          restaurants.forEach((r) => {
+            const option = document.createElement("option");
+            option.value = r._id;
+            if (currentRestaurant === r._id) option.selected = true;
+            option.textContent = `${r.name} - ${r.address.street}, ${r.address.city}`;
+            if (!(loggedUserRole == "restorator" && r._id != user.restaurant))
+              select.appendChild(option);
+          });
+
+          select.onchange = () => {
+            currentRestaurant = select.value;
+            loadMeals();
+            loadCategories();
+            resetCategory();
+          };
+        } catch (err) {
+          console.error("Errore caricamento ristoranti:", err);
+        }
+      }
+
+      //Apro modifica cibo con dati attuali
+      async function modifyFood(meal) {
+        editingFoodId = meal._id;
+
+        document.getElementById("edit-img").value = meal.strMealThumb;
+        document.getElementById("edit-name").value = meal.strMeal;
+        document.getElementById("edit-ing").value = meal.ingredients.join(", ");
+        document.getElementById("edit-meas").value = meal.measures.join(", ");
+        document.getElementById("edit-inst").value = meal.strInstructions;
+        document.getElementById("edit-yt").value = meal.strYoutube;
+        document.getElementById("edit-price").value = meal.price / 100;
+        document.getElementById("edit-time").value = meal.prepTime;
+        document.getElementById("edit-tags").value = meal.strTags;
+        document.getElementById("edit-category").value = meal.strCategory;
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
